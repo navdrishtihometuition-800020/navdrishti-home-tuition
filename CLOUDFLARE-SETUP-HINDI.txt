@@ -20,6 +20,6 @@ D1 binding DB aur schema.sql bhi configure hona chahiye. Dashboard login session
 
 SECURITY / LIMITATIONS:
 - Form data database me save hota hai, aur email notification send hota hai. Agar email service fail ho, record database me phir bhi save rahega.
-- Optional screenshot upload ko is initial backend me email/DB me store nahi kiya gaya; form field preserve hai but attachment processing is not enabled.
+- Optional Google Maps rating screenshot ab browser me compress hokar D1 record me store hota hai, email me attachment banta hai, aur Admin Dashboard me sirf logged-in Admin ko dikhai deta hai. Naye submissions par lagu; purane records ke screenshots wapas nahi mil sakte.
 - Real deployment ke baad dono forms ko test karna zaroori hai.
 - Is ZIP se live website automatically deploy nahi hoti; Cloudflare project me publish/redeploy karna hoga.

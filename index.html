@@ -399,6 +399,25 @@ footer strong{color:#fff}
 </footer>
 
 <script>
+function canvasBlob(canvas, type, quality){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Screenshot compress nahi ho paya.')),type,quality));}
+async function compressScreenshot(file){
+  if(!file||!file.size)return file;
+  if(!file.type.startsWith('image/'))throw new Error('Kripya image file select karein.');
+  if(file.size>10*1024*1024)throw new Error('Screenshot 10 MB se chhota hona chahiye.');
+  if(!('createImageBitmap' in window)){
+    if(file.size<=450*1024)return file;
+    throw new Error('Is browser me image compression support nahi hai. Kripya chhoti screenshot file select karein.');
+  }
+  const bitmap=await createImageBitmap(file);let width=bitmap.width,height=bitmap.height;
+  const maxSide=1280;if(Math.max(width,height)>maxSide){const scale=maxSide/Math.max(width,height);width=Math.round(width*scale);height=Math.round(height*scale);}
+  const canvas=document.createElement('canvas');
+  for(let attempt=0;attempt<8;attempt++){
+    canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,width,height);
+    for(const quality of [0.82,0.72,0.62,0.52,0.42]){const blob=await canvasBlob(canvas,'image/jpeg',quality);if(blob.size<=350*1024){bitmap.close();return new File([blob],'rating-screenshot.jpg',{type:'image/jpeg',lastModified:Date.now()});}}
+    width=Math.max(480,Math.round(width*0.82));height=Math.max(480,Math.round(height*0.82));
+  }
+  bitmap.close();throw new Error('Screenshot chhoti nahi ho pa rahi. Kripya doosri ya chhoti image select karein.');
+}
 document.querySelectorAll('form[data-registration-form]').forEach(function(form){
   form.addEventListener('submit', async function(event){
     event.preventDefault();
@@ -406,9 +425,12 @@ document.querySelectorAll('form[data-registration-form]').forEach(function(form)
     const oldText=button?button.textContent:'';
     if(button){button.disabled=true;button.textContent='Submitting...';}
     try{
-      const response=await fetch('/api/register',{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
+      const formData=new FormData(form);const screenshot=form.querySelector('input[name="rating_screenshot"]');
+      if(screenshot&&screenshot.files&&screenshot.files[0]){if(button)button.textContent='Compressing screenshot…';const compressed=await compressScreenshot(screenshot.files[0]);formData.set('rating_screenshot',compressed,compressed.name);}
+      if(button)button.textContent='Submitting…';
+      const response=await fetch('/api/register',{method:'POST',body:formData,headers:{'Accept':'application/json'}});
       const result=await response.json().catch(()=>({}));
-      if(!response.ok) throw new Error(result.error||'Registration submit nahi ho paya. Kripya dobara koshish karein.');
+      if(!response.ok)throw new Error(result.error||'Registration submit nahi ho paya. Kripya dobara koshish karein.');
       window.location.href='/registration-success.html';
     }catch(error){alert(error.message||'Network error. Kripya dobara koshish karein.');}
     finally{if(button){button.disabled=false;button.textContent=oldText;}}
