@@ -1,0 +1,1 @@
+export async function onRequestPost(){return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','cache-control':'no-store','set-cookie':'nd_admin=; HttpOnly; Secure; SameSite=Strict; Path=/api/admin; Max-Age=0'}})}

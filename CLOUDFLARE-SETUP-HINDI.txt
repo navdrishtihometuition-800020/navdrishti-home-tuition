@@ -1,0 +1,25 @@
+NAV DRISHTI HOME TUITION — REGISTRATION BACKEND SETUP
+
+Email destination configured in code: vkr151020@gmail.com
+
+IMPORTANT: ZIP upload karne bhar se email/database activate nahi honge. Cloudflare setup zaroori hai.
+
+1) Cloudflare Pages project me is ZIP ka extracted content deploy karein (index.html root par hona chahiye). Functions folder bhi deploy hona chahiye.
+2) Cloudflare Dashboard > Workers & Pages > apna Pages project > Settings > Functions > D1 database bindings me binding name DB rakhein aur ek D1 database connect karein.
+3) D1 database ke Console me schema.sql ka SQL run karein.
+4) Resend.com par account banayein, API key banayein, aur sender domain verify karein. Jab tak domain verify na ho, Resend testing sender se aam taur par sirf account-owner verified address ko hi mail bhej sakta hai.
+5) Cloudflare Pages > Settings > Environment variables me secret RESEND_API_KEY add karein. Optional RESEND_FROM me verified sender, jaise 'NAV DRISHTI <forms@your-verified-domain.com>' set karein.
+6) Project redeploy karein aur Student/Tutor form test karein.
+
+ADMIN DASHBOARD:
+Dashboard URL: https://YOUR-PAGES-DOMAIN.pages.dev/admin/
+Cloudflare Pages > Settings > Variables and Secrets (Production) me ye secrets add karein:
+- ADMIN_PASSWORD: apna lamba, unique admin password (kisi ko share na karein)
+- ADMIN_SESSION_SECRET: kam-se-kam 32 random characters ka alag secret
+D1 binding DB aur schema.sql bhi configure hona chahiye. Dashboard login session 8 ghante baad expire hota hai. Dashboard records ko newest-first dikhata hai (maximum 1000 records per view).
+
+SECURITY / LIMITATIONS:
+- Form data database me save hota hai, aur email notification send hota hai. Agar email service fail ho, record database me phir bhi save rahega.
+- Optional screenshot upload ko is initial backend me email/DB me store nahi kiya gaya; form field preserve hai but attachment processing is not enabled.
+- Real deployment ke baad dono forms ko test karna zaroori hai.
+- Is ZIP se live website automatically deploy nahi hoti; Cloudflare project me publish/redeploy karna hoga.
