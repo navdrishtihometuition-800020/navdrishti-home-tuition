@@ -38,14 +38,28 @@ export async function onRequestPost({request, env}) {
     }
 
     const now = new Date().toISOString();
+    // Use India-local calendar date so the number resets at midnight in India.
+    const indiaParts = new Intl.DateTimeFormat("en-CA", {timeZone:"Asia/Kolkata", year:"numeric", month:"2-digit", day:"2-digit"}).formatToParts(new Date());
+    const part = key => indiaParts.find(p => p.type === key)?.value || "00";
+    const registrationDate = `${part("year")}${part("month")}${part("day")}`; // YYYYMMDD key
+    // Atomic UPSERT: Student and Tutor share the same daily sequence; concurrent requests cannot get the same number.
+    const counter = await env.DB.prepare(`INSERT INTO daily_registration_counters (registration_date, last_sequence)
+      VALUES (?, 1)
+      ON CONFLICT(registration_date) DO UPDATE SET last_sequence = last_sequence + 1
+      WHERE last_sequence < 999
+      RETURNING last_sequence`).bind(registrationDate).all();
+    const sequence = counter.results?.[0]?.last_sequence;
+    if (!sequence) return json({error:"Aaj ke 999 registrations poore ho chuke hain. Kripya kal dobara try karein."}, 429);
+    const registrationNumber = `${registrationDate.slice(2)}${String(sequence).padStart(3, "0")}`; // YYMMDDNNN
+    data.registration_number = registrationNumber;
     const result = await env.DB.prepare("INSERT INTO registrations (type, payload, created_at) VALUES (?, ?, ?)").bind(type, JSON.stringify(data), now).run();
-    const subject = `${type === "student" ? "Student" : "Tutor"} Registration - NAV DRISHTI HOME TUITION`;
+    const subject = `${type === "student" ? "Student" : "Tutor"} Registration - ${registrationNumber} - NAV DRISHTI HOME TUITION`;
     const body = Object.entries(data).filter(([k]) => k !== "rating_screenshot").map(([k,v]) => `${k.replaceAll('_',' ')}: ${v || '(not provided)'}`).join("\n");
-    const text = `New ${type} registration\nSubmitted: ${now}\nRecord ID: ${result.meta?.last_row_id || "saved"}\nScreenshot attached: ${attachment ? "Yes" : "No"}\n\n${body}`;
+    const text = `New ${type} registration\nRegistration Number: ${registrationNumber}\nSubmitted: ${now}\nRecord ID: ${result.meta?.last_row_id || "saved"}\nScreenshot attached: ${attachment ? "Yes" : "No"}\n\n${body}`;
     const email = {from:env.RESEND_FROM || "NAV DRISHTI Website <onboarding@resend.dev>",to:[DESTINATION],subject,text};
     if (attachment) email.attachments = [{filename:attachment.filename, content:attachment.content}];
     const mail = await fetch("https://api.resend.com/emails", {method:"POST",headers:{"Authorization":`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify(email)});
-    if (!mail.ok) return json({ok:true, warning:"Registration saved, but email delivery failed. Please check Resend setup."}, 200);
-    return json({ok:true});
+    if (!mail.ok) return json({ok:true, registrationNumber, warning:"Registration saved, but email delivery failed. Please check Resend setup."}, 200);
+    return json({ok:true, registrationNumber});
   } catch (e) { return json({error:"Could not save registration. Please try again."}, 500); }
 }

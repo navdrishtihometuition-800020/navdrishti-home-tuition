@@ -431,7 +431,7 @@ document.querySelectorAll('form[data-registration-form]').forEach(function(form)
       const response=await fetch('/api/register',{method:'POST',body:formData,headers:{'Accept':'application/json'}});
       const result=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(result.error||'Registration submit nahi ho paya. Kripya dobara koshish karein.');
-      window.location.href='/registration-success.html';
+      window.location.href='/registration-success.html?registration='+encodeURIComponent(result.registrationNumber||'');
     }catch(error){alert(error.message||'Network error. Kripya dobara koshish karein.');}
     finally{if(button){button.disabled=false;button.textContent=oldText;}}
   });
