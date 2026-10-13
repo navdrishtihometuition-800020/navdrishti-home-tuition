@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://navdrishtihometuitionpatna.pages.dev/sitemap.xml
